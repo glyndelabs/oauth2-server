@@ -17,7 +17,6 @@ use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
 use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
 use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
 use League\OAuth2\Server\RequestTypes\AuthorizationRequest;
-use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;
 use League\OAuth2\Server\ResponseTypes\ResponseTypeInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -72,32 +71,17 @@ class AuthorizationServer implements EmitterAwareInterface
      * @param ClientRepositoryInterface      $clientRepository
      * @param AccessTokenRepositoryInterface $accessTokenRepository
      * @param ScopeRepositoryInterface       $scopeRepository
-     * @param CryptKey|string                $privateKey
-     * @param CryptKey|string                $publicKey
      * @param null|ResponseTypeInterface     $responseType
      */
     public function __construct(
         ClientRepositoryInterface $clientRepository,
         AccessTokenRepositoryInterface $accessTokenRepository,
         ScopeRepositoryInterface $scopeRepository,
-        $privateKey,
-        $publicKey,
-        ResponseTypeInterface $responseType = null
+        ResponseTypeInterface $responseType
     ) {
         $this->clientRepository = $clientRepository;
         $this->accessTokenRepository = $accessTokenRepository;
         $this->scopeRepository = $scopeRepository;
-
-        if ($privateKey instanceof CryptKey === false) {
-            $privateKey = new CryptKey($privateKey);
-        }
-        $this->privateKey = $privateKey;
-
-        if ($publicKey instanceof CryptKey === false) {
-            $publicKey = new CryptKey($publicKey);
-        }
-        $this->publicKey = $publicKey;
-
         $this->responseType = $responseType;
     }
 
@@ -116,8 +100,6 @@ class AuthorizationServer implements EmitterAwareInterface
         $grantType->setAccessTokenRepository($this->accessTokenRepository);
         $grantType->setClientRepository($this->clientRepository);
         $grantType->setScopeRepository($this->scopeRepository);
-        $grantType->setPrivateKey($this->privateKey);
-        $grantType->setPublicKey($this->publicKey);
         $grantType->setEmitter($this->getEmitter());
 
         $this->enabledGrantTypes[$grantType->getIdentifier()] = $grantType;
@@ -175,7 +157,7 @@ class AuthorizationServer implements EmitterAwareInterface
             if ($grantType->canRespondToAccessTokenRequest($request)) {
                 $tokenResponse = $grantType->respondToAccessTokenRequest(
                     $request,
-                    $this->getResponseType(),
+                    $this->responseType,
                     $this->grantTypeAccessTokenTTL[$grantType->getIdentifier()]
                 );
 
@@ -186,21 +168,5 @@ class AuthorizationServer implements EmitterAwareInterface
         }
 
         throw OAuthServerException::unsupportedGrantType();
-    }
-
-    /**
-     * Get the token type that grants will return in the HTTP response.
-     *
-     * @return ResponseTypeInterface
-     */
-    protected function getResponseType()
-    {
-        if ($this->responseType instanceof ResponseTypeInterface === false) {
-            $this->responseType = new BearerTokenResponse();
-        }
-
-        $this->responseType->setPrivateKey($this->privateKey);
-
-        return $this->responseType;
     }
 }

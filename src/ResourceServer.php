@@ -12,13 +12,14 @@ namespace League\OAuth2\Server;
 use League\OAuth2\Server\AuthorizationValidators\AuthorizationValidatorInterface;
 use League\OAuth2\Server\AuthorizationValidators\BearerTokenValidator;
 use League\OAuth2\Server\Exception\OAuthServerException;
-use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
+use League\OAuth2\Server\Repositories\AccessTokenValidatorRepositoryInterface;
+use League\OAuth2\Server\TokenSigner\TokenSignerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 class ResourceServer
 {
     /**
-     * @var AccessTokenRepositoryInterface
+     * @var AccessTokenValidatorRepositoryInterface
      */
     private $accessTokenRepository;
 
@@ -35,22 +36,18 @@ class ResourceServer
     /**
      * New server instance.
      *
-     * @param AccessTokenRepositoryInterface       $accessTokenRepository
-     * @param CryptKey|string                      $publicKey
-     * @param null|AuthorizationValidatorInterface $authorizationValidator
+     * @param AccessTokenValidatorRepositoryInterface                $accessTokenRepository
+     * @param \League\OAuth2\Server\TokenSigner\TokenSignerInterface $tokenSigner
+     * @param null|AuthorizationValidatorInterface                   $authorizationValidator
+     *
+     * @internal param \League\OAuth2\Server\CryptKey|string $publicKey
      */
     public function __construct(
-        AccessTokenRepositoryInterface $accessTokenRepository,
-        $publicKey,
+        AccessTokenValidatorRepositoryInterface $accessTokenRepository,
+        TokenSignerInterface $tokenSigner,
         AuthorizationValidatorInterface $authorizationValidator = null
     ) {
         $this->accessTokenRepository = $accessTokenRepository;
-
-        if ($publicKey instanceof CryptKey === false) {
-            $publicKey = new CryptKey($publicKey);
-        }
-        $this->publicKey = $publicKey;
-
         $this->authorizationValidator = $authorizationValidator;
     }
 

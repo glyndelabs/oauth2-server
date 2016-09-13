@@ -11,12 +11,29 @@
 
 namespace League\OAuth2\Server\ResponseTypes;
 
+use Lcobucci\JWT\Builder;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\RefreshTokenEntityInterface;
+use League\OAuth2\Server\TokenSigner\TokenSignerInterface;
 use Psr\Http\Message\ResponseInterface;
 
 class BearerTokenResponse extends AbstractResponseType
 {
+    /**
+     * @var \League\OAuth2\Server\TokenSigner\TokenSignerInterface
+     */
+    private $tokenSigner;
+
+    /**
+     * BearerTokenResponse constructor.
+     *
+     * @param \League\OAuth2\Server\TokenSigner\TokenSignerInterface $tokenSigner
+     */
+    public function __construct(TokenSignerInterface $tokenSigner)
+    {
+        $this->tokenSigner = $tokenSigner;
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -24,7 +41,16 @@ class BearerTokenResponse extends AbstractResponseType
     {
         $expireDateTime = $this->accessToken->getExpiryDateTime()->getTimestamp();
 
-        $jwtAccessToken = $this->accessToken->convertToJWT($this->privateKey);
+        $jwtAccessToken = (new Builder())
+            ->setAudience($this->accessToken->getClient()->getIdentifier())
+            ->setId($this->accessToken->getIdentifier(), true)
+            ->setIssuedAt(time())
+            ->setNotBefore(time())
+            ->setExpiration($this->accessToken->getExpiryDateTime()->getTimestamp())
+            ->setSubject($this->accessToken->getUserIdentifier())
+            ->set('scopes', $this->accessToken->getScopes())
+            ->sign($this->tokenSigner->getSigner(), $this->tokenSigner->getKey())
+            ->getToken();
 
         $responseParams = [
             'token_type'   => 'Bearer',
@@ -67,11 +93,12 @@ class BearerTokenResponse extends AbstractResponseType
      * AuthorizationServer::getResponseType() to pull in your version of
      * this class rather than the default.
      *
-     * @param AccessTokenEntityInterface $accessToken
+     * @param callable $callable
+     *
      * @return array
      */
-    protected function getExtraParams(AccessTokenEntityInterface $accessToken)
+    public function getExtraJsonResponseParams(callable $callable)
     {
-        return [];
+        return $callable();
     }
 }

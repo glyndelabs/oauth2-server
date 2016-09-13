@@ -14,7 +14,8 @@ use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Lcobucci\JWT\ValidationData;
 use League\OAuth2\Server\CryptTrait;
 use League\OAuth2\Server\Exception\OAuthServerException;
-use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
+use League\OAuth2\Server\Repositories\AccessTokenValidatorRepositoryInterface;
+use League\OAuth2\Server\TokenSigner\TokenSignerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 class BearerTokenValidator implements AuthorizationValidatorInterface
@@ -22,16 +23,25 @@ class BearerTokenValidator implements AuthorizationValidatorInterface
     use CryptTrait;
 
     /**
-     * @var AccessTokenRepositoryInterface
+     * @var AccessTokenValidatorRepositoryInterface
      */
     private $accessTokenRepository;
 
     /**
-     * @param AccessTokenRepositoryInterface $accessTokenRepository
+     * @var \League\OAuth2\Server\TokenSigner\TokenSignerInterface
      */
-    public function __construct(AccessTokenRepositoryInterface $accessTokenRepository)
-    {
+    private $tokenSigner;
+
+    /**
+     * @param AccessTokenValidatorRepositoryInterface                $accessTokenRepository
+     * @param \League\OAuth2\Server\TokenSigner\TokenSignerInterface $tokenSigner
+     */
+    public function __construct(
+        AccessTokenValidatorRepositoryInterface $accessTokenRepository,
+        TokenSignerInterface $tokenSigner
+    ) {
         $this->accessTokenRepository = $accessTokenRepository;
+        $this->tokenSigner = $tokenSigner;
     }
 
     /**
@@ -49,7 +59,7 @@ class BearerTokenValidator implements AuthorizationValidatorInterface
         try {
             // Attempt to parse and validate the JWT
             $token = (new Parser())->parse($jwt);
-            if ($token->verify(new Sha256(), $this->publicKey->getKeyPath()) === false) {
+            if ($token->verify($this->tokenSigner->getSigner(), $this->tokenSigner->getKey()) === false) {
                 throw OAuthServerException::accessDenied('Access token could not be verified');
             }
 
@@ -75,7 +85,7 @@ class BearerTokenValidator implements AuthorizationValidatorInterface
         } catch (\InvalidArgumentException $exception) {
             // JWT couldn't be parsed so return the request as is
             throw OAuthServerException::accessDenied($exception->getMessage());
-        } catch(\RuntimeException $exception){
+        } catch (\RuntimeException $exception) {
             //JWR couldn't be parsed so return the request as is
             throw OAuthServerException::accessDenied('Error while decoding to JSON');
         }
