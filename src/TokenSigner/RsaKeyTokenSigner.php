@@ -3,6 +3,7 @@
 namespace League\OAuth2\Server\TokenSigner;
 
 use Lcobucci\JWT\Signer;
+use Lcobucci\JWT\Signer\Rsa\Sha256;
 use League\OAuth2\Server\CryptKey;
 
 class RsaKeyTokenSigner implements TokenSignerInterface
@@ -20,12 +21,11 @@ class RsaKeyTokenSigner implements TokenSignerInterface
     /**
      * TokenSignerInterface constructor.
      *
-     * @param \Lcobucci\JWT\Signer $signer
      * @param CryptKey             $privateKey
      */
-    public function __construct(Signer $signer, CryptKey $privateKey)
+    public function __construct(CryptKey $privateKey)
     {
-        $this->signer = $signer;
+        $this->signer = new Sha256();
         $this->key = new Signer\Key($privateKey->getKeyPath(), $privateKey->getPassPhrase());
     }
 

@@ -19,12 +19,11 @@ class HmacTokenSigner implements TokenSignerInterface
     /**
      * TokenSignerInterface constructor.
      *
-     * @param \Lcobucci\JWT\Signer $signer
      * @param string               $key
      */
-    public function __construct(Signer $signer, $key)
+    public function __construct($key)
     {
-        $this->signer = $signer;
+        $this->signer = new Signer\Hmac\Sha256();
         $this->key = $key;
     }
 
