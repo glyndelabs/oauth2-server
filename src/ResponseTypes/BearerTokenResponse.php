@@ -82,7 +82,10 @@ class BearerTokenResponse extends AbstractResponseType
 
         }
 
-        $responseParams = array_merge($this->getExtraParams($this->accessToken), $responseParams);
+        $responseParams = array_merge(
+            call_user_func($this->extraJsonResponseParams, $this->accessToken),
+            $responseParams
+        );
 
         $response = $response
             ->withStatus(200)
