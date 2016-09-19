@@ -12,7 +12,6 @@
 namespace League\OAuth2\Server\ResponseTypes;
 
 use Lcobucci\JWT\Builder;
-use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\RefreshTokenEntityInterface;
 use League\OAuth2\Server\TokenSigner\TokenSignerInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -25,13 +24,22 @@ class BearerTokenResponse extends AbstractResponseType
     private $tokenSigner;
 
     /**
+     * @var callable
+     */
+    private $extraJsonResponseParams;
+
+    /**
      * BearerTokenResponse constructor.
      *
      * @param \League\OAuth2\Server\TokenSigner\TokenSignerInterface $tokenSigner
+     * @param callable                                               $extraJsonResponseParams
      */
-    public function __construct(TokenSignerInterface $tokenSigner)
+    public function __construct(TokenSignerInterface $tokenSigner, callable $extraJsonResponseParams = null)
     {
         $this->tokenSigner = $tokenSigner;
+        $this->extraJsonResponseParams = ($extraJsonResponseParams === null)
+            ? function () { return []; }
+            : $extraJsonResponseParams;
     }
 
     /**
