@@ -1,8 +1,11 @@
 <?php
 
 use League\OAuth2\Server\AuthorizationServer;
+use League\OAuth2\Server\CryptKey;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\Grant\PasswordGrant;
+use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;
+use League\OAuth2\Server\TokenSigner\RsaKeyTokenSigner;
 use OAuth2ServerExamples\Repositories\AccessTokenRepository;
 use OAuth2ServerExamples\Repositories\ClientRepository;
 use OAuth2ServerExamples\Repositories\RefreshTokenRepository;
@@ -15,16 +18,25 @@ use Slim\App;
 include __DIR__ . '/../vendor/autoload.php';
 
 $app = new App([
+
+    'settings'                 => [
+        'displayErrorDetails' => true
+    ],
+
     // Add the authorization server to the DI container
     AuthorizationServer::class => function () {
+
+        // Path to private key
+        $privateKey = new CryptKey('file://' . __DIR__ . '/../private.key');
 
         // Setup the authorization server
         $server = new AuthorizationServer(
             new ClientRepository(),                 // instance of ClientRepositoryInterface
             new AccessTokenRepository(),            // instance of AccessTokenRepositoryInterface
             new ScopeRepository(),                  // instance of ScopeRepositoryInterface
-            'file://'.__DIR__.'/../private.key',    // path to private key
-            'file://'.__DIR__.'/../public.key'      // path to public key
+            new BearerTokenResponse(
+                new RsaKeyTokenSigner($privateKey)
+            )
         );
 
         $grant = new PasswordGrant(
@@ -65,6 +77,7 @@ $app->post(
             // Catch unexpected exceptions
             $body = $response->getBody();
             $body->write($exception->getMessage());
+
             return $response->withStatus(500)->withBody($body);
 
         }

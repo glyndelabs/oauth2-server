@@ -8,7 +8,11 @@
  */
 
 use League\OAuth2\Server\AuthorizationServer;
+use League\OAuth2\Server\CryptKey;
 use League\OAuth2\Server\Exception\OAuthServerException;
+use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;
+use League\OAuth2\Server\TokenSigner\HmacTokenSigner;
+use League\OAuth2\Server\TokenSigner\RsaKeyTokenSigner;
 use OAuth2ServerExamples\Repositories\AccessTokenRepository;
 use OAuth2ServerExamples\Repositories\ClientRepository;
 use OAuth2ServerExamples\Repositories\ScopeRepository;
@@ -29,18 +33,18 @@ $app = new App([
         $scopeRepository = new ScopeRepository(); // instance of ScopeRepositoryInterface
         $accessTokenRepository = new AccessTokenRepository(); // instance of AccessTokenRepositoryInterface
 
-        // Path to public and private keys
-        $privateKey = 'file://'.__DIR__.'/../private.key';
-        //$privateKey = new CryptKey('file://path/to/private.key', 'passphrase'); // if private key has a pass phrase
-        $publicKey = 'file://'.__DIR__.'/../public.key';
+        // Path to private key
+        $privateKey = new CryptKey('file://' . __DIR__ . '/../private.key');
 
         // Setup the authorization server
         $server = new AuthorizationServer(
             $clientRepository,
             $accessTokenRepository,
             $scopeRepository,
-            $privateKey,
-            $publicKey
+            new BearerTokenResponse(
+//                new HmacTokenSigner(random_bytes(40))
+                new RsaKeyTokenSigner($privateKey)
+            )
         );
 
         // Enable the client credentials grant on the server
