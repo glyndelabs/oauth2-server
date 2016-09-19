@@ -58,12 +58,13 @@ class BearerTokenResponse extends AbstractResponseType
             ->setSubject($this->accessToken->getUserIdentifier())
             ->set('scopes', $this->accessToken->getScopes())
             ->sign($this->tokenSigner->getSigner(), $this->tokenSigner->getKey())
-            ->getToken();
+            ->getToken()
+            ->__toString();
 
         $responseParams = [
             'token_type'   => 'Bearer',
             'expires_in'   => $expireDateTime - (new \DateTime())->getTimestamp(),
-            'access_token' => (string) $jwtAccessToken,
+            'access_token' => $jwtAccessToken,
         ];
 
         if ($this->refreshToken instanceof RefreshTokenEntityInterface) {
