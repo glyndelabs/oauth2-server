@@ -26,15 +26,18 @@ use Psr\Http\Message\ServerRequestInterface;
 class PasswordGrant extends AbstractGrant
 {
     /**
-     * @param UserRepositoryInterface         $userRepository
-     * @param RefreshTokenRepositoryInterface $refreshTokenRepository
+     * @param UserRepositoryInterface              $userRepository
+     * @param RefreshTokenRepositoryInterface|null $refreshTokenRepository
      */
     public function __construct(
         UserRepositoryInterface $userRepository,
-        RefreshTokenRepositoryInterface $refreshTokenRepository
+        RefreshTokenRepositoryInterface $refreshTokenRepository = null
     ) {
         $this->setUserRepository($userRepository);
-        $this->setRefreshTokenRepository($refreshTokenRepository);
+
+        if ($refreshTokenRepository instanceof RefreshTokenRepositoryInterface) {
+            $this->setRefreshTokenRepository($refreshTokenRepository);
+        }
 
         $this->refreshTokenTTL = new \DateInterval('P1M');
     }
@@ -53,15 +56,19 @@ class PasswordGrant extends AbstractGrant
         $user = $this->validateUser($request, $client);
 
         // Finalize the requested scopes
-        $scopes = $this->scopeRepository->finalizeScopes($scopes, $this->getIdentifier(), $client, $user->getIdentifier());
+        $scopes = $this->scopeRepository->finalizeScopes($scopes, $this->getIdentifier(), $client,
+            $user->getIdentifier());
 
         // Issue and persist new tokens
         $accessToken = $this->issueAccessToken($accessTokenTTL, $client, $user->getIdentifier(), $scopes);
-        $refreshToken = $this->issueRefreshToken($accessToken);
+
+        if ($this->refreshTokenRepository instanceof RefreshTokenRepositoryInterface) {
+            $refreshToken = $this->issueRefreshToken($accessToken);
+            $responseType->setRefreshToken($refreshToken);
+        }
 
         // Inject tokens into response
         $responseType->setAccessToken($accessToken);
-        $responseType->setRefreshToken($refreshToken);
 
         return $responseType;
     }
