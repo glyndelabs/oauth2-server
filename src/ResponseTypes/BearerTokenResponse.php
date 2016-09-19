@@ -95,18 +95,4 @@ class BearerTokenResponse extends AbstractResponseType
 
         return $response;
     }
-
-    /**
-     * Add custom fields to your Bearer Token response here, then override
-     * AuthorizationServer::getResponseType() to pull in your version of
-     * this class rather than the default.
-     *
-     * @param callable $callable
-     *
-     * @return array
-     */
-    public function getExtraJsonResponseParams(callable $callable)
-    {
-        return $callable();
-    }
 }
