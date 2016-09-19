@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.0.0-alpha1 (released 2016-09-XX)
+
+* Introduced HMAC signer as an alternative to RSA key signing
+* If you don't pass in a RefreshTokenRepository into a grant a refresh token will no longer be created
+* 
+
 ## 5.1.1 (released 2016-07-26)
 
 * Improved test suite (Issue #614)
