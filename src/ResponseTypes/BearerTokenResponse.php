@@ -67,20 +67,19 @@ class BearerTokenResponse extends AbstractResponseType
         ];
 
         if ($this->refreshToken instanceof RefreshTokenEntityInterface) {
-            $refreshToken = $this->encrypt(
-                json_encode(
-                    [
-                        'client_id'        => $this->accessToken->getClient()->getIdentifier(),
-                        'refresh_token_id' => $this->refreshToken->getIdentifier(),
-                        'access_token_id'  => $this->accessToken->getIdentifier(),
-                        'scopes'           => $this->accessToken->getScopes(),
-                        'user_id'          => $this->accessToken->getUserIdentifier(),
-                        'expire_time'      => $this->refreshToken->getExpiryDateTime()->getTimestamp(),
-                    ]
-                )
-            );
 
-            $responseParams['refresh_token'] = $refreshToken;
+            $responseParams['refresh_token'] = (new Builder())
+                ->setAudience($this->accessToken->getClient()->getIdentifier())
+                ->setId($this->refreshToken->getIdentifier(), true)
+                ->setIssuedAt(time())
+                ->setNotBefore(time())
+                ->setExpiration($this->refreshToken->getExpiryDateTime()->getTimestamp())
+                ->setSubject($this->accessToken->getUserIdentifier())
+                ->set('scopes', $this->accessToken->getScopes())
+                ->sign($this->tokenSigner->getSigner(), $this->tokenSigner->getKey())
+                ->getToken()
+                ->__toString();
+
         }
 
         $responseParams = array_merge($this->getExtraParams($this->accessToken), $responseParams);
